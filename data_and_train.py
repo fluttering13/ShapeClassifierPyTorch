@@ -57,10 +57,12 @@ def validate_model(model, criterion, val_loader, device):
     predicted_labels = []
     with torch.no_grad():
         for images, labels in val_loader:
-            images, labels = images.to(device), labels.to(device)
+            if device!=torch.device('cpu'):
+                images, labels = images.to(device), labels.to(device)
+
             outputs = model(images)
             val_loss += criterion(outputs, labels).item() * images.size(0)
-            _, predicted = torch.max(outputs, 1)
+            _, predicted = torch.max(outputs, 1) #get predictions from the final layer
 
             correct += (predicted == labels).sum().item()
             true_labels.extend(labels.cpu().numpy())
@@ -69,20 +71,21 @@ def validate_model(model, criterion, val_loader, device):
     val_loss /= len(val_loader.dataset)
     accuracenter_y = correct / len(val_loader.dataset) * 100
 
-    cm = confusion_matrix(true_labels, predicted_labels)
-    return val_loss, accuracenter_y, cm    
+    confusionMatrix = confusion_matrix(true_labels, predicted_labels)
+    return val_loss, accuracenter_y, confusionMatrix    
 
 def train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs, checkpoint_interval, device, result_save_name):
-    os.makedirs('checkpoints', exist_ok=True)
+    os.makedirs('checkpoints', exist_ok=True)#make directory of checkpoint folder
     epoch_list=[]
     training_loss_list=[]
     validation_loss_list=[]
     val_acc_list=[]
-    cm_list=[]
-    for epoch in range(num_epochs):
+    confusion_matrix_list=[]
+
+    for epoch in range(num_epochs):# begin training
         epoch_list.append(epoch)
         model.train()  
-        running_loss = 0.0
+        running_loss = 0.0 # the training loss summing over the batches in training 
 
         for images, labels in tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epochs}', unit='batch'):
             images, labels = images.to(device), labels.to(device)
@@ -98,8 +101,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}")
 
         # Validate the model
-        if (epoch + 1) % checkpoint_interval == 0:
-
+        if (epoch + 1) % checkpoint_interval == 0: # save and validate the model per 2 epoch
             val_loss, val_acc, confusion_matrix = validate_model(model, criterion, val_loader, device)
             print(f"Validation Loss: {val_loss:.4f}, Accuracenter_y: {val_acc:.2f}%")
             print(f'confusion_matrix:\n {confusion_matrix}')
@@ -109,32 +111,34 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
             print(f"Checkpoint saved at {checkpoint_path}")
             validation_loss_list.append(val_loss.cpu().numpy())
             val_acc_list.append(val_acc)
-            cm_list.append(confusion_matrix)
+            confusion_matrix_list.append(confusion_matrix)
+
     result_dict={'epoch_list':epoch_list,
                  'training_loss_list':training_loss_list,
                  'validation_loss_list':validation_loss_list,
                  'val_acc_list':val_acc_list,
-                 'cm_list':cm_list
-                 }
+                 'cm_list':confusion_matrix_list
+                 } # the summary dict
     with open('./checkpoints/'+result_save_name+'.pkl', 'wb') as f:
         pickle.dump(result_dict, f)
     return result_dict
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-image_height =200  #  
-image_width= 200
-batch_size=64
-num_epochs = 10
-checkpoint_interval = 2
+if __name__ == '__main__':
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    image_height =200  
+    image_width= 200
+    batch_size=64
+    num_epochs = 10
+    checkpoint_interval = 2
 
-folder_path='./pic'
-number_classes=len([f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))])
+    folder_path='./pic'
+    number_classes=len([f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))])
 
-model = SimpleCNN(image_height,image_width,number_classes).to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=0.001)
-### read if intestsed https://arxiv.org/abs/1711.05101
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-train_loader, val_loader, test_loader=exp_data_loader(image_height, image_width, batch_size)
-result_dict=train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs, checkpoint_interval, device, result_save_name='simple_dataset')
+    model = SimpleCNN(image_height,image_width,number_classes).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.AdamW(model.parameters(), lr=0.001)
+    ### read if intestsed https://arxiv.org/abs/1711.05101
+    ### decoupled weight decay is wildly useful in different framework.
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_loader, val_loader, test_loader=exp_data_loader(image_height, image_width, batch_size)
+    result_dict=train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs, checkpoint_interval, device, result_save_name='simple_dataset')
