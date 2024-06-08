@@ -120,7 +120,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
         pickle.dump(result_dict, f)
     return result_dict
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-image_height =200  # 假设输入图片大小为200x200
+image_height =200  #  
 image_width= 200
 batch_size=64
 num_epochs = 10
