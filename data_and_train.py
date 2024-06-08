@@ -7,14 +7,14 @@ from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 from train.data_loader import *
 import pickle
-# the number of class is determined by the number of folder under pic
+
 
 
 class SimpleCNN(nn.Module):
     def __init__(self, image_height, image_width, number_classes):
         super(SimpleCNN, self).__init__()
         #batch_size
-        fc_input_size = 32 * (image_height // 4) * (image_width // 4)
+        fc_input_size = 32 * (image_height // 4) * (image_width // 4) #two maxPool://4 and second conv channel: 32 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.batchnorm1 = nn.BatchNorm2d(16)
         self.relu1 = nn.ReLU()
@@ -30,22 +30,22 @@ class SimpleCNN(nn.Module):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.batchnorm1(x)
+        x = self.conv1(x) #out: (batch_size, 16, cov_height, cov_width)
+        x = self.batchnorm1(x) 
         x = self.relu1(x)
-        x = self.pool1(x)
+        x = self.pool1(x) #out: (batch_size, 16, cov_height/2, cov_width/2)
 
-        x = self.conv2(x)
+        x = self.conv2(x) #out: (batch_size, 32, cov_height/2, cov_width/2)
         x = self.batchnorm2(x)
         x = self.relu2(x)
-        x = self.pool2(x)
+        x = self.pool2(x) #out: (batch_size, 32, cov_height/4, cov_width/4)
 
         x = x.squeeze()
         fc_input_size = 32 * (x.size(2)) * (x.size(3))
-        x = x.view(-1, fc_input_size)
+        x = x.view(-1, fc_input_size) # out: (batch_size, 32 * (image_height // 4) * (image_width // 4))
 
-        x = F.relu(self.fc1(x))
-        #x = self.dropout(x)
+        x = F.relu(self.fc1(x)) #out: (batch_size, 128)
+
         x = self.fc2(x)
         
         return x
@@ -119,6 +119,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
     with open('./checkpoints/'+result_save_name+'.pkl', 'wb') as f:
         pickle.dump(result_dict, f)
     return result_dict
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 image_height =200  #  
 image_width= 200
@@ -131,7 +132,8 @@ number_classes=len([f for f in os.listdir(folder_path) if os.path.isdir(os.path.
 
 model = SimpleCNN(image_height,image_width,number_classes).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.AdamW(model.parameters(), lr=0.001)
+### read if intestsed https://arxiv.org/abs/1711.05101
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 train_loader, val_loader, test_loader=exp_data_loader(image_height, image_width, batch_size)
