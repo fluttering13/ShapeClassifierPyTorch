@@ -17,7 +17,7 @@ def plot_epoch_result(dataset_name,y_label_name):
         x_list=result_dict['epoch_list']
         y_list=result_dict['training_loss_list']
         plt.scatter(x_list,y_list)
-        plt.title('epoch - train_loss_list')
+        plt.title(f'{dataset_name}:epoch - train_loss_list')
         plt.xlabel('epoch')
         plt.ylabel(y_label_name)
         plt.savefig('./traing_result_pic/'+dataset_name+'_'+'epoch'+'_'+y_label_name+'.png')
@@ -27,7 +27,7 @@ def plot_epoch_result(dataset_name,y_label_name):
         x_list=result_dict['epoch_list'][::2]
         y_list=result_dict['val_acc_list']
         plt.scatter(x_list,y_list)
-        plt.title('epoch - val_acc_list')
+        plt.title(f'{dataset_name}:epoch - val_acc_list')
         plt.xlabel('epoch')
         plt.ylabel(y_label_name)
         plt.savefig('./traing_result_pic/'+dataset_name+'_'+'epoch'+'_'+y_label_name+'.png')
@@ -36,7 +36,7 @@ def plot_epoch_result(dataset_name,y_label_name):
         x_list=result_dict['epoch_list'][::2]
         y_list=result_dict['validation_loss_list']
         plt.scatter(x_list,y_list)
-        plt.title('epoch - val_loss_list')
+        plt.title(f'{dataset_name}:epoch - val_loss_list')
         plt.xlabel('epoch')
         plt.ylabel(y_label_name)
         plt.savefig('./traing_result_pic/'+dataset_name+'_'+'epoch'+'_'+y_label_name+'.png')
